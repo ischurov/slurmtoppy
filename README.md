@@ -4,10 +4,24 @@ A console-based [SLURM](https://slurm.schedmd.com) job monitoring tool.
 What `top` is for `ps / kill`, `slurtoppy` is for `squeue / scancel`.
 
 ## Installation
+### pip
 ```bash
 pip install slurmtoppy
 ```
 There are no dependencies, except of standard SLURM commands.
+
+### nix
+```nix
+buildPythonPackage rec {
+    pname = "slurmtoppy";
+    version = "0.1.0";
+    src = fetchPypi {
+        inherit pname version;
+        sha256 = "sha256-IcI/tlH9p5hdOkohZcMTl/eGhvHCrg9LlPkCRzlT/Dg=";
+    };
+    doCheck = false;
+}
+```
 
 ## Running
 ```bash
