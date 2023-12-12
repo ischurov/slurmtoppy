@@ -1,7 +1,7 @@
 # slurmtoppy
 A console-based [SLURM](https://slurm.schedmd.com) job monitoring tool.
 
-What `top` is for `ps / kill`, `slurtoppy` is for `squeue / scancel`.
+What `htop` is for `ps`, `slurmtoppy` is for `squeue`.
 
 ## Installation
 ### pip
@@ -27,6 +27,9 @@ buildPythonPackage rec {
 ```bash
 slurmtop
 ```
+
+## Screenshot
+<img width="704" alt="Screenshot of slurmtop command" src="https://github.com/ischurov/slurmtoppy/assets/2717321/b9c691bb-a78a-4ddb-9fe9-a2b341a84e02">
 
 ## Features
 - Show list of running jobs (a.k.a. `watch squeue`).
