@@ -24,8 +24,14 @@ buildPythonPackage rec {
 ```
 
 ## Running
+After installation:
 ```bash
 slurmtop
+```
+
+Using nix, without installation:
+```
+nix run github:ischurov/slurmtoppy
 ```
 
 ## Screenshot

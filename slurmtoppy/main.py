@@ -85,6 +85,7 @@ class SlurmJobController:
         os.system(command)
         # Restore the screen and terminal settings
         self.screen.clear()
+        self.display_minihelp()
         curses.doupdate()
 
     def cancel_job(self, selected_job):
