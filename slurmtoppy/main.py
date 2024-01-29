@@ -6,6 +6,26 @@ import subprocess
 import threading
 import time
 import os
+import re
+
+
+def get_stdout_path(jobid):
+    # Execute the scontrol command and capture the output
+    result = subprocess.run(
+        ["scontrol", "show", "job", str(jobid)], capture_output=True, text=True
+    )
+
+    # Check for errors
+    if result.returncode != 0:
+        raise Exception(f"scontrol command failed with error: {result.stderr}")
+
+    # Search for StdOut line
+    match = re.search(r"StdOut=(\S+)", result.stdout)
+    if not match:
+        raise ValueError(f"StdOut path not found in scontrol output for job {jobid}")
+
+    # Extract and return the StdOut path
+    return match.group(1)
 
 
 class SlurmJobController:
@@ -70,13 +90,14 @@ class SlurmJobController:
             self.prev_job_count = current_jobs
             self.screen.refresh()
 
-    def show_message(self, message, sleep=1):
+    def show_message(self, message: str, sleep=1):
         """Display an error message at the bottom of the screen."""
         height, width = self.screen.getmaxyx()
         self.screen.addstr(height - 2, 4, message)
         self.screen.clrtoeol()
         self.screen.refresh()
         time.sleep(sleep)
+        self.display_minihelp()
 
     def run_system_command(self, command):
         """Run a system command and restore terminal settings afterwards."""
@@ -129,7 +150,15 @@ class SlurmJobController:
                         self.selected_index += 1
                     else:
                         selected_job = self.jobs[self.selected_index].split()[0]
-                        output_file = f"slurm-{selected_job}.out"
+                        try:
+                            output_file = get_stdout_path(selected_job)
+                        except Exception as e:
+                            self.show_message(
+                                f"Failed to get output file path for job {selected_job}: {e}",
+                                sleep=5,
+                            )
+                            output_file = f"slurm-{selected_job}.out"
+
                         if key == ord("c") or key == ord("C"):
                             self.cancel_job(selected_job)
                         elif key in (
@@ -142,8 +171,10 @@ class SlurmJobController:
                                 f"Output file {output_file} does not exist."
                             )
                         elif key == ord("l") or key == ord("L"):
+                            print("Press Q to exit less\n\n")
                             self.run_system_command(f"less {output_file}")
                         elif key == ord("t") or key == ord("T"):
+                            print("Press Ctrl+C to exit tail\n\n")
                             self.run_system_command(f"tail -f {output_file}")
 
                 self.display_jobs()
