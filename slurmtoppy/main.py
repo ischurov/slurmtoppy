@@ -61,7 +61,7 @@ class SlurmJobController:
         self.screen.addstr(
             height - 1,
             4,
-            "Q: quit   C: cancel   ↓ | J: down   ↑ | K: up   L: less   T: tail",
+            "Q: quit   C: cancel   ↓ | J: down   ↑ | K: up   L: less   T: tail   S: ssh",
         )
         self.screen.clrtoeol()
         self.screen.refresh()
@@ -149,14 +149,15 @@ class SlurmJobController:
                     ) and self.selected_index < len(self.jobs) - 1:
                         self.selected_index += 1
                     else:
-                        selected_job = self.jobs[self.selected_index].split()[0]
+                        if self.selected_index >= len(self.jobs):
+                            continue
+                        job_fields = self.jobs[self.selected_index].split()
+                        selected_job = job_fields[0]
                         try:
                             output_file = get_stdout_path(selected_job)
+                            message = None
                         except Exception as e:
-                            self.show_message(
-                                f"Failed to get output file path for job {selected_job}: {e}",
-                                sleep=5,
-                            )
+                            message = f"Failed to get output file path for job {selected_job}: {e}"
                             output_file = f"slurm-{selected_job}.out"
 
                         if key == ord("c") or key == ord("C"):
@@ -167,6 +168,8 @@ class SlurmJobController:
                             ord("L"),
                             ord("T"),
                         ) and not os.path.exists(output_file):
+                            if message:
+                                self.show_message(message)
                             self.show_message(
                                 f"Output file {output_file} does not exist."
                             )
@@ -176,6 +179,14 @@ class SlurmJobController:
                         elif key == ord("t") or key == ord("T"):
                             print("Press Ctrl+C to exit tail\n\n")
                             self.run_system_command(f"tail -f {output_file}")
+                        elif key == ord("s") or key == ord("S"):
+                            node = job_fields[-1]
+                            if not re.match("\w+", node):
+                                self.show_message(
+                                    f"Failed to get node name for job {selected_job}"
+                                )
+                                continue
+                            self.run_system_command(f"ssh {node}")
 
                 self.display_jobs()
                 time.sleep(sleep_time)
