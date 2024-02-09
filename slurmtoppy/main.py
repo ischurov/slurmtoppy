@@ -61,7 +61,7 @@ class SlurmJobController:
         self.screen.addstr(
             height - 1,
             4,
-            "Q: quit   C: cancel   ↓ | J: down   ↑ | K: up   L: less   T: tail   S: ssh",
+            "Q: quit   C: cancel   A: cancel all   ↓ | J: down   ↑ | K: up   L: less   T: tail   S: ssh",
         )
         self.screen.clrtoeol()
         self.screen.refresh()
@@ -99,10 +99,12 @@ class SlurmJobController:
         time.sleep(sleep)
         self.display_minihelp()
 
-    def run_system_command(self, command):
+    def run_system_command(self, command: str, message: str | None = None):
         """Run a system command and restore terminal settings afterwards."""
         # Turn off curses operations, save the current terminal state
         curses.endwin()
+        if message is not None:
+            print(message)
         os.system(command)
         # Restore the screen and terminal settings
         self.screen.clear()
@@ -162,6 +164,11 @@ class SlurmJobController:
 
                         if key == ord("c") or key == ord("C"):
                             self.cancel_job(selected_job)
+                        if key == ord("a") or key == ord("A"):
+                            if "_" in selected_job:
+                                self.cancel_job(selected_job.split("_")[0])
+                            else:
+                                self.show_message(f"No main job for {selected_job}")
                         elif key in (
                             ord("l"),
                             ord("t"),
@@ -174,11 +181,14 @@ class SlurmJobController:
                                 f"Output file {output_file} does not exist."
                             )
                         elif key == ord("l") or key == ord("L"):
-                            print("Press Q to exit less\n\n")
-                            self.run_system_command(f"less {output_file}")
+                            self.run_system_command(
+                                f"less {output_file}",
+                            )
                         elif key == ord("t") or key == ord("T"):
-                            print("Press Ctrl+C to exit tail\n\n")
-                            self.run_system_command(f"tail -f {output_file}")
+                            self.run_system_command(
+                                f"tail -f {output_file}",
+                                message="Press Ctrl+C to exit tail\n",
+                            )
                         elif key == ord("s") or key == ord("S"):
                             node = job_fields[-1]
                             if not re.match("\w+", node):
@@ -186,7 +196,10 @@ class SlurmJobController:
                                     f"Failed to get node name for job {selected_job}"
                                 )
                                 continue
-                            self.run_system_command(f"ssh {node}")
+                            self.run_system_command(
+                                f"ssh {node}",
+                                message="Exit shell (Ctrl+D) to return to slurmtop\n",
+                            )
 
                 self.display_jobs()
                 time.sleep(sleep_time)
