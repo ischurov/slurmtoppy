@@ -7,6 +7,7 @@ import threading
 import time
 import os
 import re
+from typing import Optional
 
 
 def get_stdout_path(jobid):
@@ -36,6 +37,7 @@ class SlurmJobController:
         self.selected_index = 0
         self.lock = threading.Lock()
         self.prev_job_count = 0
+        self.left_margin = 4
 
     def fetch_jobs(self):
         """Fetch current SLURM jobs using squeue command."""
@@ -58,11 +60,16 @@ class SlurmJobController:
 
     def display_minihelp(self):
         height, width = self.screen.getmaxyx()
+        minihelp_line = (
+            "(Q)uit   (C)ancel   cancel (A)ll   (L)ess   (T)ail   (S)sh   (J)↓   (K)↑"
+        )
+
         self.screen.addstr(
             height - 1,
-            4,
-            "Q: quit   C: cancel   A: cancel all   ↓ | J: down   ↑ | K: up   L: less   T: tail   S: ssh",
+            self.left_margin,
+            minihelp_line[: width - self.left_margin - 1],
         )
+
         self.screen.clrtoeol()
         self.screen.refresh()
 
@@ -71,18 +78,29 @@ class SlurmJobController:
         with self.lock:
             max_y, max_x = self.screen.getmaxyx()
             current_jobs = len(self.jobs)
+            string_size = max_x - self.left_margin - 1
 
-            self.screen.addstr(1, 4, self.header)
+            self.screen.addstr(
+                1, self.left_margin, self.header[:string_size].ljust(string_size)
+            )
 
             # Update only the lines that have changed
             for i in range(max(current_jobs, self.prev_job_count)):
                 if i < current_jobs:
                     if i == self.selected_index:
                         self.screen.attron(curses.A_REVERSE)
-                        self.screen.addstr(i + 2, 4, self.jobs[i][: max_x - 1])
+                        self.screen.addstr(
+                            i + 2,
+                            self.left_margin,
+                            self.jobs[i][:string_size].ljust(string_size),
+                        )
                         self.screen.attroff(curses.A_REVERSE)
                     else:
-                        self.screen.addstr(i + 2, 4, self.jobs[i][: max_x - 1])
+                        self.screen.addstr(
+                            i + 2,
+                            self.left_margin,
+                            self.jobs[i][:string_size].ljust(string_size),
+                        )
                 else:
                     self.screen.move(i + 2, 0)
                     self.screen.clrtoeol()  # Clear residual text from previous longer lists
@@ -99,7 +117,7 @@ class SlurmJobController:
         time.sleep(sleep)
         self.display_minihelp()
 
-    def run_system_command(self, command: str, message: str | None = None):
+    def run_system_command(self, command: str, message: Optional[str] = None):
         """Run a system command and restore terminal settings afterwards."""
         # Turn off curses operations, save the current terminal state
         curses.endwin()

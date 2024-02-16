@@ -8,7 +8,7 @@
   outputs = { self, nixpkgs }: {
     packages.x86_64-linux.slurmtoppy = nixpkgs.legacyPackages.x86_64-linux.python3Packages.buildPythonApplication {
       pname = "slurmtoppy";
-      version = "0.1.1";  
+      version = "0.1.5";  
       src = self;
     };
 
